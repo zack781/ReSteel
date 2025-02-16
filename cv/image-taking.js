@@ -96,11 +96,31 @@ const run = async () => {
       metadata: { name: 'image-capturing' },
     }).catch((err) => { console.log(err) })
 
-    // corelink.on('sender', (data) => {
+    corelink.on('sender', (data) => {
+      console.log("sender = ", data);
       let counter = 0;
-
+      console.log('imgBuff = ', imgBuff);
       const buffer = Buffer.from(imgBuff);
-      corelink.send(sender, buffer, { "seq-num": counter});
-    // })
+      const bufferLength = buffer.length;
+
+      console.log("bufferLength = ", bufferLength);
+
+      async function sendChunk() {
+
+      while (counter < bufferLength) {
+        console.log('bufferLength = ', bufferLength);
+        console.log('counter = ', counter);
+        const chunk = counter + 1024 < bufferLength ? buffer.slice(counter, counter + 1024) : buffer.slice(counter, bufferLength);
+        const lastChunk = counter + 1024 >= bufferLength;
+        corelink.send(sender, chunk, { "seq-num": counter, "last-chunk": lastChunk});
+        counter += 1024;
+        await new Promise(r => setTimeout(r, 100));
+      }
+      }
+
+      sendChunk();
+
+      // corelink.send(sender, buffer, { "seq-num": counter});
+    })
   }
 }

@@ -1,4 +1,5 @@
-const corelink = require('corelink-client')
+const corelink = require('corelink-client');
+const fs = require('fs');
 
 const config = {
   ControlPort: 20012,
@@ -17,7 +18,9 @@ const password = process.env.CORELINK_PASSWORD
 
 const workspace = 'Holodeck'
 const protocol = 'tcp'
-const datatype = 'distance'
+const datatype = 'image-capturing'
+var arr = [];
+var index = 0;
 
 const run = async () => {
   if (await corelink.connect({ username, password }, config).catch((err) => { console.log(err) })) {
@@ -35,7 +38,28 @@ const run = async () => {
     })
 
     corelink.on('data', (streamID, data, header) => {
-      console.log(streamID, data.toString(), JSON.stringify(header))
+      // console.log(streamID, data.toString(), JSON.stringify(header))
+      console.log('data = ', data);
+      console.log('header = ', header);
+      if (header['seq-num'] === index) {
+        arr.push(data);
+        index+=1024;
+      }
+      if (header['last-chunk']) {
+        const buf = Buffer.concat(arr);
+        console.log('buf = ', buf);
+
+        fs.writeFile("output_from_buffer.jpg", buf, function(err) {
+          if (err) {
+            console.error("Error saving image buffer to file:", err);
+          } else {
+            console.log("Image saved as output_from_buffer.jpg");
+          }
+        });
+
+        arr = [];
+        index = 0;
+      }
     })
   }
 }
