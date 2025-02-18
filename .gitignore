@@ -1,1 +1,11 @@
+# Node.js dependencies
 node_modules/
+
+# Logs
+*.log
+
+# Environment files (contains sensitive data)
+.env
+
+# System files
+.DS_Store
