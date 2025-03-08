@@ -117,12 +117,9 @@ def maximalRectangle(matrix):
 
 def load_scaled_dxf_and_find_max_rectangles(dxf_input_path, dxf_output_path, scale):
     """ Reads a scaled DXF file and extracts the largest available rectangles (MIRs). """
-
-    # Read the DXF file
     doc = ezdxf.readfile(dxf_input_path)
     msp = doc.modelspace()
 
-    # Parse contours from the DXF
     contours = []
     for entity in msp.query("LWPOLYLINE"):
         points = [(p[0], p[1]) for p in entity.get_points()]
@@ -134,18 +131,15 @@ def load_scaled_dxf_and_find_max_rectangles(dxf_input_path, dxf_output_path, sca
         print("No valid contours found!")
         return
 
-    # Assume the largest contour represents the material, while others are holes
     contours.sort(key=lambda p: p.area, reverse=True)
-    board_poly = contours[0]  # Outer contour of the board
-    hole_polys = contours[1:]  # Holes
+    board_poly = contours[0]
+    hole_polys = contours[1:]
 
-    # Compute the boundary of the board
     x_min, y_min, x_max, y_max = board_poly.bounds
-    board_width = int(np.ceil((x_max - x_min) * scale))  # In millimeters
+    board_width = int(np.ceil((x_max - x_min) * scale))
     board_height = int(np.ceil((y_max - y_min) * scale))
     available_mask = np.zeros((board_height, board_width), dtype=np.uint8)
 
-    # Generate a binary mask
     board_points = np.array([[int((p[0] - x_min) * scale), int((p[1] - y_min) * scale)] for p in board_poly.exterior.coords], dtype=np.int32)
     cv2.fillPoly(available_mask, [board_points], 255)
 
@@ -153,9 +147,7 @@ def load_scaled_dxf_and_find_max_rectangles(dxf_input_path, dxf_output_path, sca
         hole_points = np.array([[int((p[0] - x_min) * scale), int((p[1] - y_min) * scale)] for p in hole.exterior.coords], dtype=np.int32)
         cv2.fillPoly(available_mask, [hole_points], 0)
 
-    # Convert the mask to a binary matrix
     binary_mask = (available_mask == 255).astype(np.uint8)
-
     rectangles = []
 
     while True:
@@ -163,48 +155,36 @@ def load_scaled_dxf_and_find_max_rectangles(dxf_input_path, dxf_output_path, sca
         if rect is None:
             break
 
-        width = rect[3] - rect[1] + 1
-        height = rect[2] - rect[0] + 1
-
-        # Compute the real-world rectangle dimensions (mm²)
+        y1, x1, y2, x2 = rect
+        width = x2 - x1 + 1
+        height = y2 - y1 + 1
+        
         area_mm = area / (scale ** 2)
         width_mm = width / scale
         height_mm = height / scale
 
-        if area_mm < MIN_USABLE_AREA_MM or width_mm < MIN_RECT_SIZE_MM or height_mm < MIN_RECT_SIZE_MM:
+        if area_mm < 100 or width_mm < 10 or height_mm < 10:
             break
 
-        global_rect = [
-            (rect[1] / scale + x_min, rect[0] / scale + y_min),
-            (rect[3] / scale + x_min, rect[0] / scale + y_min),
-            (rect[3] / scale + x_min, rect[2] / scale + y_min),
-            (rect[1] / scale + x_min, rect[2] / scale + y_min)
-        ]
-
-        rectangles.append((global_rect, area_mm))
-
-        binary_mask[rect[0]:rect[2]+1, rect[1]:rect[3]+1] = 0
+        x_real = x1 / scale + x_min
+        y_real = y1 / scale + y_min
+        
+        rectangles.append((x_real, y_real, width_mm, height_mm))
+        binary_mask[y1:y2+1, x1:x2+1] = 0
 
     if not rectangles:
         print("No suitable available rectangles found")
         return
 
-    # Draw all rectangles in the DXF file
-    for idx, (rect_coords, area) in enumerate(rectangles, start=1):
+    for x, y, w, h in rectangles:
+        rect_coords = [(x, y), (x + w, y), (x + w, y + h), (x, y + h)]
         msp.add_lwpolyline(rect_coords, close=True)
-        center_x = (rect_coords[0][0] + rect_coords[2][0]) / 2
-        center_y = (rect_coords[0][1] + rect_coords[2][1]) / 2
-        #msp.add_text(f"#{idx}: {area:.2f} mm²", dxfattribs={"insert": (center_x, center_y), "height": 5})
 
-    # Compute the total area of all rectangles
-    total_area = sum(a for _, a in rectangles)
-    #msp.add_text(f"Total Usable Area: {total_area:.2f} mm²", dxfattribs={"insert": (x_min + board_width/2, y_min + board_height/2), "height": 8})
-
-    # Save the DXF file
     doc.saveas(dxf_output_path)
     print(f"DXF processing completed, saved to: {dxf_output_path}")
-    print(f"Found {len(rectangles)} rectangles, total area: {total_area:.2f} mm²")
+    print(f"Found {len(rectangles)} rectangles")
     return rectangles
+
 
 def compute_scale(P1_pixel, P2_pixel, dxf_input_path, dxf_output_path):
     """ Compute the scaling factor, rotate P1P2 to make it horizontal, and output the scaled DXF """
@@ -343,3 +323,38 @@ def detect_p1_p2(image_path, p1_hsv_range=None, p2_hsv_range=None):
     return P1, P2  # Return pixel coordinates
 
 
+import os
+
+def processing(image_path, dxf_intermediate_path, dxf_intermediate_scaled, dxf_output_path):
+    """
+    Process the input JPG file and generate the final DXF file.
+    
+    Parameters:
+    image_path (str): Path to the input JPG file.
+    dxf_intermediate_path (str): Path to the intermediate DXF file.
+    dxf_intermediate_scaled (str): Path to the scaled intermediate DXF file.
+    dxf_output_path (str): Path to the final DXF file.
+    
+    Returns:
+    tuple: (Final DXF file path, calculated maximum usable rectangle rec((x_real, y_real, width_mm, height_mm)))
+    """
+    # 1. Identify contours and remove P1P2 markers
+    process_image_to_dxf(image_path, dxf_intermediate_path)
+    
+    # 2. Detect P1 and P2
+    P1_pixel, P2_pixel = detect_p1_p2(image_path)
+    
+    if P1_pixel and P2_pixel:
+        # 3. Compute scaling factor
+        scale = compute_scale(P1_pixel, P2_pixel, dxf_intermediate_path, dxf_intermediate_scaled)
+        
+        # 4. Apply DXF scaling
+        
+        # 5. Extract the largest usable rectangle and fill it
+        rec = load_scaled_dxf_and_find_max_rectangles(dxf_intermediate_scaled, dxf_output_path, 1)
+        print(rec)
+        
+        return dxf_output_path, rec
+    else:
+        print("Failed to detect P1 or P2. Please check the image quality.")
+        return None, None
