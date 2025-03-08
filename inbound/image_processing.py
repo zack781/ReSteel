@@ -322,7 +322,6 @@ def detect_p1_p2(image_path, p1_hsv_range=None, p2_hsv_range=None):
     return P1, P2  # Return pixel coordinates
 
 
-import os
 
 def processing(image_path, dxf_intermediate_path, dxf_intermediate_scaled, dxf_output_path):
     """
