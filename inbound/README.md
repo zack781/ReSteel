@@ -38,6 +38,9 @@ pip install numpy opencv-python ezdxf shapely matplotlib
 ```
 
 ## Notes
+- P1 and P2 Coordinates:
+  - P1 (0,0) is the reference point.
+  - P2 is positioned along the X-axis at (100mm, 0mm) after scaling and alignment.
 - P1 and P2 are reference markers in the image (red and green circles) used to determine scale.
 - The expected size of P1 and P2 circles should have a radius between **5 to 10 mm**.
 - Given a reference distance of **100mm** between P1 and P2.
