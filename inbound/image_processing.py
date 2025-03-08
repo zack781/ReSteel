@@ -162,8 +162,7 @@ def load_scaled_dxf_and_find_max_rectangles(dxf_input_path, dxf_output_path, sca
         area_mm = area / (scale ** 2)
         width_mm = width / scale
         height_mm = height / scale
-
-        if area_mm < 100 or width_mm < 10 or height_mm < 10:
+        if area_mm < MIN_USABLE_AREA_MM or width_mm < MIN_RECT_SIZE_MM or height_mm < MIN_RECT_SIZE_MM:
             break
 
         x_real = x1 / scale + x_min
