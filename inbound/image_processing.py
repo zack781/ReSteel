@@ -77,4 +77,4 @@ def process_image_to_dxf(image_path, dxf_output_path, p1_hsv_range=None, p2_hsv_
 
     # Save DXF
     doc.saveas(dxf_output_path)
-    print(f"✅ DXF file saved to: {dxf_output_path}")
+    print(f"DXF file saved to: {dxf_output_path}")
