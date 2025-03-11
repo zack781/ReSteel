@@ -26,9 +26,21 @@ process.on('SIGINT', () => {
   process.exit(0);
 });
 
-
 var NodeWebcam = require( "node-webcam" );
 const fs = require('fs');
+const { spawn } = require('child_process');
+
+const imgTriggerScript = './img-trigger.py';
+
+spawn('bash', ['-c', 'source ./venv/bin/activate']);
+spawn('pip', ['install', '-r', 'requirements.txt']);
+
+const pythonProcess = spawn('python', [imgTriggerScript]);
+
+pythonProcess.stdout.on('data', (data) => {
+  const output = data.toString();
+  console.log('Python script output:', output);
+});
 
 var opts = {
   width: 100,
