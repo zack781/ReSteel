@@ -4,7 +4,7 @@ const pool = require('./config/db'); // Import database config
 const dynamicRoutes = require('./routes/dynamicRoutes'); // Import dynamic CRUD routes
 
 const app = express();
-const port = 3000;
+const port = process.env.port || 3000;
 
 app.use(express.json()); // Middleware to parse JSON
 app.use(cors()); // Enable CORS for API access from different origins
