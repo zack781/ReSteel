@@ -1,3 +1,13 @@
+import numpy as np
+import cv2
+import ezdxf
+import matplotlib.pyplot as plt
+from shapely.geometry import Polygon, MultiPolygon, MultiPoint
+from shapely.ops import unary_union
+from shapely.affinity import rotate
+
+from config import MASK_SCALE, STEP_SIZE_MM, ROTATION_ANGLES, VERBOSE
+
 def load_request_shape(request_dxf_path):
     """Load a closed LWPOLYLINE shape from request.dxf."""
     doc = ezdxf.readfile(request_dxf_path)
