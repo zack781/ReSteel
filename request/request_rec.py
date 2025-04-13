@@ -19,7 +19,7 @@ def compute_min_bounding_rect(points):
     rect_coords = list(min_rect.exterior.coords)
     return rect_coords[:-1]  # remove closing point
 
-def analyze_dxf_outline(dxf_path):
+def request_rec_output(dxf_path):
     """
     Load a DXF file, compute its minimum bounding rectangle (MBR),
     and visualize the original shape.
