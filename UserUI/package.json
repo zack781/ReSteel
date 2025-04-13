@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "corelink-client": "^5.1.4",
+    "websocket": "^1.0.35"
+  }
+}
