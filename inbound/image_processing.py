@@ -225,7 +225,7 @@ def compute_scale(P1_pixel, P2_pixel, dxf_input_path, dxf_output_path):
 
     # Compute the positions of P1 and P2 in millimeter coordinates
     P1_real = (0, 0)  # Set P1 as DXF (0,0)
-    P2_real = (10, 0)  # After rotation, P2 is fixed at (10,0)
+    P2_real = (REAL_P1P2_DISTANCE_MM, 0)
 
     # Annotate P1 and P2 in the DXF
     msp.add_circle(P1_real, 1)
