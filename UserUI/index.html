@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>DXF File Selector</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f4f6f9;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .card {
+      background: white;
+      padding: 30px 40px;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    input[type="file"] {
+      margin-bottom: 20px;
+    }
+
+    button {
+      background: #007bff;
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    pre {
+      margin-top: 30px;
+      background: #272822;
+      color: #f8f8f2;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 600px;
+      overflow-x: auto;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Select Your DXF File</h2>
+    <input type="file" id="dxfInput" accept=".dxf">
+    <br>
+    <button onclick="sendDXFRequest()">Send Request</button>
+  </div>
+
+  <pre id="output">// Output will appear here</pre>
+
+  <script>
+    function sendDXFRequest() {
+      const fileInput = document.getElementById('dxfInput');
+      const file = fileInput.files[0];
+
+      if (!file) {
+        alert("Please select a DXF file.");
+        return;
+      }
+
+      const simulatedPath = "/Users/you/Desktop/" + file.name;
+
+      const requestObject = {
+        requestType: "processDXF",
+        path: simulatedPath
+      };
+
+      fetch('/send-dxf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestObject)
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('output').innerText = 
+          JSON.stringify(requestObject, null, 2) + "\n\n✅ " + data.message;
+      })
+      .catch(err => {
+        document.getElementById('output').innerText = "❌ Error: " + err;
+      });
+    }
+  </script>
+</body>
+</html>
