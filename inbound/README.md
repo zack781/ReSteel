@@ -43,7 +43,7 @@ pip install numpy opencv-python ezdxf shapely matplotlib
   - **P2 (green)** is positioned along the X-axis at (100mm, 0mm) after scaling and alignment.
 - **P1 and P2 are reference markers** in the image used to determine scale.
 - The expected size of **P1 and P2 circles** should have a radius between **5 to 10 mm**.
-- The reference distance between **P1 and P2 is 100mm**.
+- The reference distance between **P1 and P2 is defined in config**.
 - If **P1 or P2 detection fails**, check the image quality and color representation.
 - The script **removes noise** and retains only meaningful contours for DXF generation.
 - **P1P2 will always be parallel to one edge of `rec`**. To optimize for the maximum area, **align P1P2 parallel to the majority of parallel edges in the image**.
