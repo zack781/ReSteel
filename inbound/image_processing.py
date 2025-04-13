@@ -1,4 +1,4 @@
-from config import MIN_USABLE_AREA_MM, MIN_RECT_SIZE_MM
+from config import MIN_USABLE_AREA_MM, MIN_RECT_SIZE_MM, REAL_P1P2_DISTANCE_MM
 
 def process_image_to_dxf(image_path, dxf_output_path, p1_hsv_range=None, p2_hsv_range=None):
     """ Process image -> Contour detection -> DXF generation (retain external and internal contours, remove noise & P1P2 markers) """
