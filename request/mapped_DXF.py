@@ -1,4 +1,4 @@
-from config import MASK_SCALE, STEP_SIZE_MM, ROTATION_ANGLES, VERBOSE
+from config import MASK_SCALE, STEP_SIZE_MM
 
 def load_request_shape(request_dxf_path):
     """Load a closed LWPOLYLINE shape from request.dxf."""
@@ -73,7 +73,7 @@ def maximalRectangle(matrix):
             max_rect = (i - h_val + 1, l, i, r)
     return max_area, max_rect
 
-def find_best_placement(request_shape, rec, step=1.0, scale=2.0):
+def find_best_placement(request_shape, rec, step=1.0, scale=MASK_SCALE):
     """Search for the best placement that maximizes remaining usable rectangular area."""
     x0, y0, w, h = rec
     rec_poly = Polygon([(x0, y0), (x0+w, y0), (x0+w, y0+h), (x0, y0+h)])
@@ -110,7 +110,7 @@ def find_best_placement(request_shape, rec, step=1.0, scale=2.0):
         raise RuntimeError("Request shape cannot be placed inside the given rectangle.")
     return best_transformed
 
-def embed_request_to_rec(request_dxf, material_dxf, rec, output_dxf, optimize=True, step=1.0):
+def embed_request_to_rec(request_dxf, material_dxf, rec, output_dxf, optimize=True, step=STEP_SIZE_MM):
     """Main entry: embed request shape into material DXF based on rec rectangle."""
     shape = load_request_shape(request_dxf)
     if optimize:
