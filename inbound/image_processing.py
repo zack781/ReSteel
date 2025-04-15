@@ -9,19 +9,20 @@ def process_image_to_dxf(image_path, dxf_output_path, p1_hsv_range=None, p2_hsv_
 
     # Set HSV color range for P1 (red)
     if p1_hsv_range is None:
-        p1_hsv_range = [(np.array([0, 100, 100]), np.array([10, 255, 255])),
-                        (np.array([170, 100, 100]), np.array([180, 255, 255]))]
-    
+        p1_hsv_range = [(np.array([0, 80, 80]), np.array([10, 255, 255])), (np.array([160, 80, 80]), np.array([179, 255, 255]))]
+
     mask_red = sum(cv2.inRange(hsv, lower, upper) for lower, upper in p1_hsv_range)
-    
+
     # Set HSV color range for P2 (green)
     if p2_hsv_range is None:
-        p2_hsv_range = [(np.array([35, 80, 80]), np.array([85, 255, 255]))]
-    
+        p2_hsv_range = [(np.array([30, 40, 40]), np.array([95, 255, 255]))]
     mask_green = sum(cv2.inRange(hsv, lower, upper) for lower, upper in p2_hsv_range)
-    
+
     # Generate P1P2 color mask
     mask = mask_red + mask_green
+    # 生成调试图像
+    cv2.imwrite("debug_mask_red.png", mask_red)
+    cv2.imwrite("debug_mask_green.png", mask_green)
 
     # Morphological operation - Expand mask (remove marker points)
     kernel = np.ones((5,5), np.uint8)
@@ -158,7 +159,7 @@ def load_scaled_dxf_and_find_max_rectangles(dxf_input_path, dxf_output_path, sca
         y1, x1, y2, x2 = rect
         width = x2 - x1 + 1
         height = y2 - y1 + 1
-        
+
         area_mm = area / (scale ** 2)
         width_mm = width / scale
         height_mm = height / scale
@@ -167,7 +168,7 @@ def load_scaled_dxf_and_find_max_rectangles(dxf_input_path, dxf_output_path, sca
 
         x_real = x1 / scale + x_min
         y_real = y1 / scale + y_min
-        
+
         rectangles.append((x_real, y_real, width_mm, height_mm))
         binary_mask[y1:y2+1, x1:x2+1] = 0
 
@@ -284,74 +285,75 @@ def transform_dxf_with_p1_p2(dxf_input_path, dxf_output_path, scale):
 
 def detect_p1_p2(image_path, p1_hsv_range=None, p2_hsv_range=None):
     """ Detect P1 (red hollow circle) and P2 (green hollow circle), return pixel coordinates """
-    
+
     # Read the image and convert it to the HSV color space
     image = cv2.imread(image_path)
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-    
+
     # Set the HSV color range for P1 (red)
     if p1_hsv_range is None:
-        p1_hsv_range = [(np.array([0, 100, 100]), np.array([10, 255, 255])),
-                        (np.array([170, 100, 100]), np.array([180, 255, 255]))]
-    
+        p1_hsv_range = [(np.array([0, 80, 80]), np.array([10, 255, 255])), (np.array([160, 80, 80]), np.array([179, 255, 255]))]
+
+
     mask_red = sum(cv2.inRange(hsv, lower, upper) for lower, upper in p1_hsv_range)
     contours_red, _ = cv2.findContours(mask_red, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    
+
     P1 = None
     for cnt in contours_red:
         (x, y), radius = cv2.minEnclosingCircle(cnt)
-        if 3 < radius < 50:
+        print(radius)
+        if 30 < radius < 200:
             P1 = (int(x), int(y))
-    
+
     # Set the HSV color range for P2 (green)
     if p2_hsv_range is None:
-        p2_hsv_range = [(np.array([35, 80, 80]), np.array([85, 255, 255]))]
-    
+        p2_hsv_range = [(np.array([30, 40, 40]), np.array([95, 255, 255]))]
+
     mask_green = sum(cv2.inRange(hsv, lower, upper) for lower, upper in p2_hsv_range)
     contours_green, _ = cv2.findContours(mask_green, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    
+
     P2 = None
     for cnt in contours_green:
         (x, y), radius = cv2.minEnclosingCircle(cnt)
-        if 3 < radius < 50:
+        if 30 < radius < 200:
             P2 = (int(x), int(y))
-    
+
     if P1 is None or P2 is None:
         raise ValueError("Detection failed: Unable to correctly detect P1 (red O) or P2 (green O)")
-    
+
     return P1, P2  # Return pixel coordinates
 
 
 
-def processing(image_path, dxf_intermediate_path, dxf_intermediate_scaled, dxf_output_path):
+def processing(image_path, dxf_intermediate_path, dxf_intermediate_scaled, dxf_output_path,p1= red_hsv,p2=green_hsv):
     """
     Process the input JPG file and generate the final DXF file.
-    
+
     Parameters:
     image_path (str): Path to the input JPG file.
     dxf_intermediate_path (str): Path to the intermediate DXF file.
     dxf_intermediate_scaled (str): Path to the scaled intermediate DXF file.
     dxf_output_path (str): Path to the final DXF file.
-    
+
     Returns:
     tuple: (Final DXF file path, calculated maximum usable rectangle rec((x_real, y_real, width_mm, height_mm)))
     """
     # 1. Identify contours and remove P1P2 markers
-    process_image_to_dxf(image_path, dxf_intermediate_path)
-    
+    process_image_to_dxf(image_path, dxf_intermediate_path,p1,p2)
+
     # 2. Detect P1 and P2
-    P1_pixel, P2_pixel = detect_p1_p2(image_path)
-    
+    P1_pixel, P2_pixel = detect_p1_p2(image_path,p1,p2)
+
     if P1_pixel and P2_pixel:
         # 3. Compute scaling factor
         scale = compute_scale(P1_pixel, P2_pixel, dxf_intermediate_path, dxf_intermediate_scaled)
-        
+
         # 4. Apply DXF scaling
-        
+
         # 5. Extract the largest usable rectangle and fill it
         rec = load_scaled_dxf_and_find_max_rectangles(dxf_intermediate_scaled, dxf_output_path, 1)
         print(rec)
-        
+
         return dxf_output_path, rec
     else:
         print("Failed to detect P1 or P2. Please check the image quality.")
