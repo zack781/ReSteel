@@ -1,13 +1,11 @@
 node_modules/
 
-.env
-
-
 # Logs
 *.log
-
 
 # System files
 
 .DS_Store
 .env
+venv/
+.DS_Store
