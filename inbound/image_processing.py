@@ -325,7 +325,7 @@ def detect_p1_p2(image_path, p1_hsv_range=None, p2_hsv_range=None):
 
 
 
-def processing(image_path, dxf_intermediate_path, dxf_intermediate_scaled, dxf_output_path,p1= red_hsv,p2=green_hsv):
+def processing(image_path, dxf_intermediate_path, dxf_intermediate_scaled, dxf_output_path,p1=None, p2=None):
     """
     Process the input JPG file and generate the final DXF file.
 
@@ -338,6 +338,11 @@ def processing(image_path, dxf_intermediate_path, dxf_intermediate_scaled, dxf_o
     Returns:
     tuple: (Final DXF file path, calculated maximum usable rectangle rec((x_real, y_real, width_mm, height_mm)))
     """
+    if p1 is None:
+        p1 = [(np.array([0, 80, 80]), np.array([10, 255, 255])), (np.array([160, 80, 80]), np.array([179, 255, 255]))]
+    if p2 is None:
+        p2 = [(np.array([30, 40, 40]), np.array([95, 255, 255]))]
+
     # 1. Identify contours and remove P1P2 markers
     process_image_to_dxf(image_path, dxf_intermediate_path,p1,p2)
 
