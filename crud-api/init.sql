@@ -18,5 +18,7 @@ CREATE TABLE measurements (
     id SERIAL PRIMARY KEY,
     board_id INT REFERENCES boards(id) ON DELETE CASCADE,
     rectangles FLOAT[][4],  -- Each rectangle has 4 values: (w, x, y, z)
+    length FLOAT NOT NULL,
+    width FLOAT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
