@@ -27,26 +27,27 @@ while True:
         # frame = imutils.resize(frame, width=WIDTH) # Resize frame while maintaining aspect ratio
         success, buffer = cv2.imencode('.jpg',frame,[cv2.IMWRITE_JPEG_QUALITY,50])
 
-        height, width, _ = frame.shape
+        # height, width, _ = frame.shape
 
-        green_pixels = 0
-        x_critical = 640 * 0.75
-        test_count = 0
-        for x in range(0, width):
-            for y in range(0, height):
-                test_count += 1
+        # green_pixels = 0
+        # x_critical = 640 * 0.75
+        # test_count = 0
+        # for x in range(0, width):
+        #     for y in range(0, height):
+        #         test_count += 1
 
-                print("color = ", frame[y, x])
-                if (frame[y, x][1] > 200 and frame[y, x][0] < 50 and frame[y, x][2] < 50):
-                    green_pixels += 1
-                    break
+        #         print("color = ", frame[y, x])
+        #         if (frame[y, x][1] > 200 and frame[y, x][0] < 50 and frame[y, x][2] < 50):
+        #             green_pixels += 1
+        #             break
 
-        if (green_pixels / ((width - x_critical) * height) == 1):
-            # flag = True
-            print('Green detected')
+        # if (green_pixels / ((width - x_critical) * height) == 1):
+        #     # flag = True
+        #     print('Green detected')
 
         if success:
-            cv2.imwrite('img.jpg', frame)
+            print("writing image to file")
+            cv2.imwrite('img1.jpg', frame)
         else:
             print('Error capturing image')
         flag = True
