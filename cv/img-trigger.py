@@ -18,32 +18,36 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 flag = False
+picam2 = Picamera2()
+picam2.start()
+
 while True:
     if (flag == False):
-        # frame = cv2.imread("/Users/zack/Downloads/square.png")
-        picam2 = Picamera2()
-        picam2.start()
-        frame = picam2.capture_array()
-        # frame = imutils.resize(frame, width=WIDTH) # Resize frame while maintaining aspect ratio
+        frame = cv2.imread("square.png")
+        # frame = picam2.capture_array()
+        frame = imutils.resize(frame, width=WIDTH) # Resize frame while maintaining aspect ratio
         success, buffer = cv2.imencode('.jpg',frame,[cv2.IMWRITE_JPEG_QUALITY,50])
 
-        # height, width, _ = frame.shape
+        height, width, _ = frame.shape
+        print("height = ", height)
+        print("width = ", width)
 
-        # green_pixels = 0
-        # x_critical = 640 * 0.75
-        # test_count = 0
-        # for x in range(0, width):
-        #     for y in range(0, height):
-        #         test_count += 1
+        green_pixels = 0
+        x_critical = 640 * 0.75
+        test_count = 0
+        for x in range(0, width):
+            for y in range(0, height):
+                test_count += 1
 
-        #         print("color = ", frame[y, x])
-        #         if (frame[y, x][1] > 200 and frame[y, x][0] < 50 and frame[y, x][2] < 50):
-        #             green_pixels += 1
-        #             break
+                # print(x, " - ", y,  " = ", frame[y, x])
+                if (x >= x_critical):
+                     green_pixels += 1
 
-        # if (green_pixels / ((width - x_critical) * height) == 1):
-        #     # flag = True
-        #     print('Green detected')
+        print("test_count = ", test_count)
+        print("green_pixels = ", green_pixels)
+        if (green_pixels / ((width - x_critical) * height) == 1):
+            # flag = True
+            print('Green detected')
 
         if success:
             print("writing image to file")
