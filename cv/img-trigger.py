@@ -25,12 +25,26 @@ while True:
     if (flag == False):
         frame = cv2.imread("square.png")
         # frame = picam2.capture_array()
-        frame = imutils.resize(frame, width=WIDTH) # Resize frame while maintaining aspect ratio
-        success, buffer = cv2.imencode('.jpg',frame,[cv2.IMWRITE_JPEG_QUALITY,50])
+        img = imutils.resize(frame, width=WIDTH) # Resize frame while maintaining aspect ratio
+        # success, buffer = cv2.imencode('.jpg',frame,[cv2.IMWRITE_JPEG_QUALITY,50])
 
         height, width, _ = frame.shape
         print("height = ", height)
         print("width = ", width)
+
+        center = width * 0.875
+
+        roi = img[int(center[0]-length/2):int(center[0]+length/2), int(center[1]-width/2):int(center[1]+width/2)]
+        img = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+
+        green_mask = cv2.inRange(img, (41, 85, 102), (72, 255, 255))
+        output = cv2.bitwise_and(img, img, mask = green_mask)
+
+        cv2.imshow("Final Output", output)
+        cv2.waitKey(0)
+
+        if ((np.sum(green_mask)/255)/(np.shape(img)[0]*np.shape(img)[1]) > 0.75):
+            print("Green Tape Detected")
 
         green_pixels = 0
         x_critical = 640 * 0.75
