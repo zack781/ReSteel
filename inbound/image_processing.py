@@ -1,3 +1,12 @@
+import os
+import cv2
+import numpy as np
+import sqlite3
+import ezdxf
+from shapely.geometry import Polygon
+from rectpack import newPacker
+import matplotlib.pyplot as plt
+from inbound.config import MIN_RECT_SIZE_MM, REAL_P1P2_DISTANCE_MM,MIN_USABLE_AREA_MM ,red_hsv,green_hsv_range
 def process_image_to_dxf(image_path, dxf_output_path, p1_hsv_range=None, p2_hsv_range=None):
     """ Process image -> Contour detection -> DXF generation (retain external and internal contours, remove noise & P1P2 markers) """
 
@@ -288,6 +297,7 @@ def detect_p1_p2(image_path, p1_hsv_range=None, p2_hsv_range=None):
 
     # Read the image and convert it to the HSV color space
     image = cv2.imread(image_path)
+    image_c=cv2.imread(image_path)
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
     # Set the HSV color range for P1 (red)
@@ -301,10 +311,18 @@ def detect_p1_p2(image_path, p1_hsv_range=None, p2_hsv_range=None):
     P1 = None
     for cnt in contours_red:
         (x, y), radius = cv2.minEnclosingCircle(cnt)
-        print(radius)
-        if 30 < radius < 200:
-            P1 = (int(x), int(y))
-
+        if 50< radius < 160:
+            print("radius:", radius)
+            area = cv2.contourArea(cnt)
+            circle_area = np.pi * (radius ** 2)
+            fill_ratio = area / circle_area
+            print("ratio:", fill_ratio)
+            if 0.4<fill_ratio<0.9:
+                P1 = (int(x), int(y))
+                cv2.circle(image, (int(x), int(y)), int(radius), (255, 0, 0), 2)
+                cv2.putText(image, f"{int(radius)}", (int(x)-30, int(y)-10),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
+    cv2.imwrite("debug_detected_P1.png", image)
     # Set the HSV color range for P2 (green)
     if p2_hsv_range is None:
         p2_hsv_range = [(np.array([30, 40, 40]), np.array([95, 255, 255]))]
@@ -315,9 +333,20 @@ def detect_p1_p2(image_path, p1_hsv_range=None, p2_hsv_range=None):
     P2 = None
     for cnt in contours_green:
         (x, y), radius = cv2.minEnclosingCircle(cnt)
-        if 30 < radius < 200:
-            P2 = (int(x), int(y))
+        if 50 < radius < 160:
+            print("radius:", radius)
+            area = cv2.contourArea(cnt)
+            circle_area = np.pi * (radius ** 2)
+            fill_ratio = area / circle_area
+            print("ratio:", fill_ratio)
+            if 0.4<fill_ratio<0.9:
+                P2 = (int(x), int(y))
 
+            cv2.circle(image_c, (int(x), int(y)), int(radius), (255, 0, 0), 2)
+            cv2.putText(image_c, f"{int(radius)}", (int(x)-30, int(y)-10),
+            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
+
+    cv2.imwrite("debug_detected_P2.png", image_c)
     if P1 is None or P2 is None:
         raise ValueError("Detection failed: Unable to correctly detect P1 (red O) or P2 (green O)")
 
