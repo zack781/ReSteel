@@ -27,7 +27,7 @@ while True:
         frame = cv2.imread("square.png")
         # img = picam2.capture_array()
         img = imutils.resize(frame, width=WIDTH) # Resize frame while maintaining aspect ratio
-        # success, buffer = cv2.imencode('.jpg',frame,[cv2.IMWRITE_JPEG_QUALITY,50])
+        success, buffer = cv2.imencode('.jpg',frame,[cv2.IMWRITE_JPEG_QUALITY,50])
 
         height, width, _ = img.shape
         print("height = ", height)
