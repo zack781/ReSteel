@@ -2,8 +2,8 @@ const corelink = require('./corelink.lib.js')
 
 const config = {
   ControlPort: 20012,
-  ControlIP: '127.0.0.1',
-  // ControlIP: process.env.CORELINK_HOST,
+  // ControlIP: '127.0.0.1',
+  ControlIP: process.env.CORELINK_HOST,
 
   /*
   autoReconnect: false,
@@ -31,21 +31,21 @@ process.on('SIGINT', () => {
 const fs = require('fs');
 const { spawn } = require('child_process');
 
-const imgTriggerScript = './img-trigger.py';
+const imgTriggerScript = './main.py';
 
-spawn('bash', ['-c', 'source ./venv/bin/activate']);
-spawn('pip', ['install', '-r', 'requirements.txt']);
+// spawn('bash', ['-c', 'source ./venv/bin/activate']);
+// spawn('pip', ['install', '-r', 'requirements.txt']);
 
-const pythonProcess = spawn('python', [imgTriggerScript]);
-
-pythonProcess.stdout.on('data', (data) => {
-  const output = data.toString();
-  console.log('Python script output:', output);
-  if (output == "image-taken") {
-    console.log('image-taken');
-    sendImage = true;
-  }
-});
+// const pythonProcess = spawn('python3', [imgTriggerScript]);
+// 
+// pythonProcess.stdout.on('data', (data) => {
+//   const output = data.toString();
+//   console.log('Python script output:', output);
+//   if (output == "Image-Taken") {
+//     console.log('image-taken');
+//     sendImage = true;
+//   }
+// });
 
 const run = async () => {
     // corelink.setDebug(true);
@@ -56,6 +56,20 @@ const run = async () => {
       type: datatype,
       metadata: { name: 'image-capturing' },
     }).catch((err) => { console.log(err) })
+
+
+      const pythonProcess = spawn('python3', [imgTriggerScript]);
+
+      pythonProcess.stdout.on('data', (data) => {
+        const output = data.toString();
+        console.log('Python script output:', output);
+        if (output == "Image-Taken") {
+          console.log('image-taken');
+          sendImage = true;
+        }
+      });
+
+
 
     // corelink.on('sender', (data) => {
     //   console.log("sender = ", data);
@@ -84,28 +98,31 @@ const run = async () => {
     //   // corelink.send(sender, buffer, { "seq-num": counter});
     // })
       //
-    while (true) {
-      if (sendImage) {
-        console.log('Sending image...');
-        const imgBuff = fs.readFileSync('./test.jpg');
-        const buffer = Buffer.from(imgBuff);
-        const bufferLength = buffer.length;
+    // while (true) {
+    //   // console.log("checking sendImage")
+    //   if (sendImage) {
+    //     console.log('Sending image...');
+    //     const imgBuff = fs.readFileSync('./test.jpg');
+    //     const buffer = Buffer.from(imgBuff);
+    //     const bufferLength = buffer.length;
 
-        let counter = 0;
+    //     let counter = 0;
 
-        async function sendChunk() {
-          while (counter < bufferLength) {
-            const chunk = counter + 1024 < bufferLength ? buffer.slice(counter, counter + 1024) : buffer.slice(counter, bufferLength);
-            const lastChunk = counter + 1024 >= bufferLength;
-            corelink.send(sender, chunk, { "seq-num": counter, "last-chunk": lastChunk });
-            counter += 1024;
-            await new Promise(r => setTimeout(r, 100));
-          }
-        }
+    //     async function sendChunk() {
+    //       while (counter < bufferLength) {
+    //         const chunk = counter + 1024 < bufferLength ? buffer.slice(counter, counter + 1024) : buffer.slice(counter, bufferLength);
+    //         const lastChunk = counter + 1024 >= bufferLength;
+    //         corelink.send(sender, chunk, { "seq-num": counter, "last-chunk": lastChunk });
+    //         counter += 1024;
+    //         await new Promise(r => setTimeout(r, 100));
+    //       }
+    //     }
 
-        sendChunk();
-        sendImage = false;
-      }
-    }
+    //     sendChunk();
+    //     sendImage = false;
+    //   }
+    // }
   }
 }
+
+run()
