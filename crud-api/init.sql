@@ -1,8 +1,7 @@
-CREATE DATABASE strucdb;  // creating a new database
+CREATE DATABASE strucdb; 
+
 
 \c strucdb;
-
-
 
 CREATE TABLE boards (
     id SERIAL PRIMARY KEY,

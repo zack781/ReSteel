@@ -6,6 +6,6 @@ echo "Setting up the PostgreSQL database..."
 source ./config/.env
 
 # Run the SQL script to initialize the database
-psql -U $DB_USER -h $DB_HOST -p $DB_PORT -f ./crud-api/init.sql
+psql -U $DB_USER -h $DB_HOST -p $DB_PORT -f ./init.sql -d postgres
 
 echo "Database setup complete!"

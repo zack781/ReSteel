@@ -1,11 +1,11 @@
-const corelink = require('corelink-client');
+const corelink = require('./corelink.lib.js');
 const fs = require('fs');
 const { spawn } = require('child_process');
 
 const config = {
   ControlPort: 20012,
-  ControlIP: '127.0.0.1',
-  // ControlIP: process.env.CORELINK_HOST,
+  // ControlIP: '127.0.0.1',
+  ControlIP: process.env.CORELINK_HOST,
   // ControlIP: '198.22.255.16',
   autoReconnect: false,
   /*
@@ -73,6 +73,9 @@ const run = async () => {
           fs.writeFile(header['filename'], buf, function(err) {
             if (err) {
               console.error("Error saving image buffer to file:", err);
+
+              // trigger inbound (pass in image path)
+              // wait for inbound script to signal complettion
             } else {
               console.log("Image saved as output_from_buffer.jpg");
               // const inboundScript = '../inbound/image_processing.py';

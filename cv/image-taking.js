@@ -2,8 +2,8 @@ const corelink = require('./corelink.lib.js')
 
 const config = {
   ControlPort: 20012,
-  ControlIP: '127.0.0.1',
-  // ControlIP: process.env.CORELINK_HOST,
+  // ControlIP: '127.0.0.1',
+  ControlIP: process.env.CORELINK_HOST,
 
   /*
   autoReconnect: false,
