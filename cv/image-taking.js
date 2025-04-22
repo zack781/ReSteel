@@ -2,8 +2,8 @@ const corelink = require('./corelink.lib.js')
 
 const config = {
   ControlPort: 20012,
-  // ControlIP: '127.0.0.1',
-  ControlIP: process.env.CORELINK_HOST,
+  ControlIP: '127.0.0.1',
+  // ControlIP: process.env.CORELINK_HOST,
 
   /*
   autoReconnect: false,
@@ -20,9 +20,13 @@ const workspace = 'Holodeck'
 const protocol = 'tcp'
 const datatype = 'image-capturing'
 
-let sendImage = false;
-
 process.on('SIGINT', () => {
+  console.log('Disconnect Corelink gracefully...');
+  corelink.disconnect();
+  process.exit(0);
+});
+
+process.on('SIGTSTP', () => {
   console.log('Disconnect Corelink gracefully...');
   corelink.disconnect();
   process.exit(0);
@@ -31,22 +35,7 @@ process.on('SIGINT', () => {
 const fs = require('fs');
 const { spawn } = require('child_process');
 
-const imgTriggerScript = './main.py';
-
-// spawn('bash', ['-c', 'source ./venv/bin/activate']);
-// spawn('pip', ['install', '-r', 'requirements.txt']);
-
-// const pythonProcess = spawn('python3', [imgTriggerScript]);
-// 
-// pythonProcess.stdout.on('data', (data) => {
-//   const output = data.toString();
-//   console.log('Python script output:', output);
-//   if (output == "Image-Taken") {
-//     console.log('image-taken');
-//     sendImage = true;
-//   }
-// });
-
+let imgCount = 0;
 const run = async () => {
     // corelink.setDebug(true);
     if (await corelink.connect({ username, password }, config).catch((err) => { console.log(err) })) {
@@ -57,72 +46,48 @@ const run = async () => {
       metadata: { name: 'image-capturing' },
     }).catch((err) => { console.log(err) })
 
+    corelink.on('sender', (data) => {
+      console.log("sender = ", data);
 
-      const pythonProcess = spawn('python3', [imgTriggerScript]);
+      async function loop() {
+        while (true) {
+          // your logic here (preferably non-blocking)
+          const filePath = './test' + imgCount + '.jpg';
+          if (fs.existsSync(filePath)) {
+            console.log('Sending image...');
+            const imgBuff = fs.readFileSync(filePath);
+            const buffer = Buffer.from(imgBuff);
+            console.log('Buffer length:', buffer.length);
+            const bufferLength = buffer.length;
 
-      pythonProcess.stdout.on('data', (data) => {
-        const output = data.toString();
-        console.log('Python script output:', output);
-        if (output == "Image-Taken") {
-          console.log('image-taken');
-          sendImage = true;
+            let counter = 0;
+
+            async function sendChunk() {
+              while (counter < bufferLength) {
+                const chunk = counter + 1024 < bufferLength ? buffer.slice(counter, counter + 1024) : buffer.slice(counter, bufferLength);
+                const lastChunk = counter + 1024 >= bufferLength;
+                console.log('Sending chunk:', counter, 'Last chunk:', lastChunk);
+                corelink.send(sender, chunk, { "seq-num": counter, "last-chunk": lastChunk, "filename": filePath, "file-size": bufferLength });
+                counter += 1024;
+
+                await new Promise(resolve => setTimeout(resolve, 10)); // simulate async wait
+              }
+            }
+
+            sendChunk();
+            imgCount++;
+          }
+          await new Promise(resolve => setTimeout(resolve, 100)); // simulate async wait
         }
-      });
+        console.log('Exited loop');
+      }
 
+      loop();
+    })
 
-
-    // corelink.on('sender', (data) => {
-    //   console.log("sender = ", data);
-    //   let counter = 0;
-    //   console.log('imgBuff = ', imgBuff);
-    //   const buffer = Buffer.from(imgBuff);
-    //   const bufferLength = buffer.length;
-
-    //   console.log("bufferLength = ", bufferLength);
-
-    //   async function sendChunk() {
-
-    //     while (counter < bufferLength) {
-    //       console.log('bufferLength = ', bufferLength);
-    //       console.log('counter = ', counter);
-    //       const chunk = counter + 1024 < bufferLength ? buffer.slice(counter, counter + 1024) : buffer.slice(counter, bufferLength);
-    //       const lastChunk = counter + 1024 >= bufferLength;
-    //       corelink.send(sender, chunk, { "seq-num": counter, "last-chunk": lastChunk});
-    //       counter += 1024;
-    //       await new Promise(r => setTimeout(r, 100));
-    //     }
-    //   }
-
-    //   sendChunk();
-
-    //   // corelink.send(sender, buffer, { "seq-num": counter});
-    // })
-      //
-    // while (true) {
-    //   // console.log("checking sendImage")
-    //   if (sendImage) {
-    //     console.log('Sending image...');
-    //     const imgBuff = fs.readFileSync('./test.jpg');
-    //     const buffer = Buffer.from(imgBuff);
-    //     const bufferLength = buffer.length;
-
-    //     let counter = 0;
-
-    //     async function sendChunk() {
-    //       while (counter < bufferLength) {
-    //         const chunk = counter + 1024 < bufferLength ? buffer.slice(counter, counter + 1024) : buffer.slice(counter, bufferLength);
-    //         const lastChunk = counter + 1024 >= bufferLength;
-    //         corelink.send(sender, chunk, { "seq-num": counter, "last-chunk": lastChunk });
-    //         counter += 1024;
-    //         await new Promise(r => setTimeout(r, 100));
-    //       }
-    //     }
-
-    //     sendChunk();
-    //     sendImage = false;
-    //   }
-    // }
   }
 }
 
 run()
+
+
