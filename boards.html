@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Boards</title>
+</head>
+<body>
+    <h1>Available Boards</h1>
+    <div>
+        {% for board in boards %}
+            <div style="margin-bottom: 30px;">
+                <p><strong>Board ID:</strong> {{ board.id }}</p>
+                <p><strong>PNG:</strong> <img src="{{ board.png_path }}" width="200"></p>
+                <p><strong>DXF Raw:</strong> <a href="{{ board.dxf_raw_path }}" download>Download Raw DXF</a></p>
+                <p><strong>DXF Processed:</strong> <a href="{{ board.dxf_processed_path }}" download>Download Processed DXF</a></p>
+                <hr>
+            </div>
+        {% endfor %}
+    </div>
+</body>
+</html>
