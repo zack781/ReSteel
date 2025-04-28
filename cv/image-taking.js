@@ -1,18 +1,11 @@
 const corelink = require('./corelink.lib.js')
 const sharp = require('sharp');
+require('dotenv').config();
 
 const config = {
   ControlPort: 20012,
-  // ControlIP: '127.0.0.1',
   ControlIP: process.env.CORELINK_HOST,
-  // ControlIP: '128.110.217.55',
 
-  /*
-  autoReconnect: false,
-    for service in a local network please replace the certificate with the appropriate version
-  cert: '<corelink-tools-repo>/config/ca-crt.pem'
-  */
-  // cert: '/Users/zack/git_repos/ReSteel/ca-crt.pem'
   cert: process.env.CERT_PATH
 }
 

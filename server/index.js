@@ -1,19 +1,16 @@
 const corelink = require('./corelink.lib.js');
 const fs = require('fs');
 const { spawn } = require('child_process');
+require('dotenv').config();
 
 const config = {
   ControlPort: 20012,
-  // ControlIP: '127.0.0.1',
   ControlIP: process.env.CORELINK_HOST,
-  // ControlIP: '128.110.217.55',
   autoReconnect: false,
   /*
     for service in a local network please replace the certificate with the appropriate version
-  cert: '<corelink-tools-repo>/config/ca-crt.pem'
   */
   cert: process.env.CERT_PATH
-  // cert: '/Users/zack/git_repos/ReSteel/ca-crt.pem'
 }
 
 const username = process.env.CORELINK_USERNAME
