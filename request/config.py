@@ -10,6 +10,6 @@ from shapely.affinity import rotate
 from rectpack import newPacker
 
 MASK_SCALE = 2.0                 
-STEP_SIZE_MM = 1.0              
+STEP_SIZE_MM = 1000.0              
 ROTATION_ANGLES = range(0, 180, 15) 
 VERBOSE = True                   
