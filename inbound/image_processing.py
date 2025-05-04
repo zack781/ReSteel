@@ -190,7 +190,6 @@ def load_scaled_dxf_and_find_max_rectangles(dxf_input_path, dxf_output_path, sca
     doc.saveas(dxf_output_path)
     print(f"DXF processing completed, saved to: {dxf_output_path}")
     print(f"Found {len(rectangles)} rectangles")
-    print("COMPLETED")
     return rectangles
 
 
@@ -366,7 +365,7 @@ def processing(image_path, dxf_intermediate_path, dxf_intermediate_scaled, dxf_o
 
         # 5. Extract the largest usable rectangle and fill it
         rec = load_scaled_dxf_and_find_max_rectangles(dxf_intermediate_scaled, dxf_output_path, 1)
-        print(rec)
+        print('record= ', rec)
 
         return dxf_output_path, rec
     else:
@@ -388,3 +387,4 @@ if __name__ == "__main__":
         dxf_intermediate_scaled=args.dxf_intermediate_scaled,
         dxf_output_path=args.dxf_output_path
     )
+    print("COMPLETED")

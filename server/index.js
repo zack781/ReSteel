@@ -115,33 +115,52 @@ const run = async () => {
 
               inboundProcess.stdout.on('data', (data) => {
                 console.log(`stdout: ${data}`);
+                if (data.toString().includes('record')) {
+                  const str = data.toString();
+                  const matches = [...str.matchAll(/record=\s*(\[\(.*?\)\])/g)];
+
+                  const rectanglesArray = matches.map(match => {
+                    const raw = match[1]
+                      .replace(/\(/g, '[')
+                      .replace(/\)/g, ']');
+
+                    const parsed = JSON.parse(raw); // will be an array of arrays
+
+                    return parsed.map(([x, y, length, width]) => ({
+                      rectangles: [[x, y, 0, 0]],
+                      length,
+                      width
+                    }));
+                  }).flat(); // flatten in case multiple rects per line
+
+                  console.log(rectanglesArray);
+                }
                 if (data.toString().includes('COMPLETED')) {
                   console.log('inbound script completed');
 
-                  const data = JSON.stringify({
-                    {
-                      "png_path": header['filename'],
-                      "dxf_raw_path": filename + '_intermediate.dxf',
-                      "dxf_processed_path": filename + '_intermediate_scaled.dxf',
-                      "length": 300,
-                      "width": 150,
-                      "measurements": [
-                        { "rectangles": [[120,0,0,0]], "length": 120, "width": 80 },
-                        { "rectangles": [[180,5,5,5]], "length": 180, "width": 90 }
-                      ]
-                    }
-                  });
+                  // const data = JSON.stringify({
+                  //   {
+                  //     "png_path": header['filename'],
+                  //     "dxf_raw_path": filename + '_intermediate.dxf',
+                  //     "dxf_processed_path": filename + '_intermediate_scaled.dxf',
+                  //     "length": 0,
+                  //     "width": 0,
+                  //     "measurements": [
+                  //       { "rectangles": [[120,0,0,0]], "length": 120, "width": 80 },
+                  //       { "rectangles": [[180,5,5,5]], "length": 180, "width": 90 }
+                  //     ]
+                  //   }
+                  // });
 
-                  const options = {
-                    hostname: 'api.example.com',
-                    path: '/submit',
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'Content-Length': data.length
-                    }
-                  };
-                  
+                  // const options = {
+                  //   hostname: 'api.example.com',
+                  //   path: '/submit',
+                  //   method: 'POST',
+                  //   headers: {
+                  //     'Content-Type': 'application/json',
+                  //     'Content-Length': data.length
+                  //   }
+                  // };
                 }
               });
             }

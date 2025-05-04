@@ -74,8 +74,9 @@ async function loop() {
           .catch(err => {
             console.error('Compression failed:', err);
           });
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 5000));
         }
+        console.log('sending ', outputPath);
 
         console.log('Sending image...');
         const imgBuff = fs.readFileSync(outputPath);
@@ -88,25 +89,28 @@ async function loop() {
 
         async function sendChunk() {
           while (counter < bufferLength) {
-            startLoop = false;
             console.log('Sending chunk:', counter);
             const chunk = counter + 1024 < bufferLength ? buffer.slice(counter, counter + 1024) : buffer.slice(counter, bufferLength);
             const lastChunk = counter + 1024 >= bufferLength;
+            startLoop = counter + 1024 >= bufferLength;
             corelink.send(sender, chunk, { "seq-num": counter, "last-chunk": lastChunk, "filename": outputPath, "file-size": bufferLength, "index": index });
 
-            await new Promise(resolve => setTimeout(resolve, 150));
+            if (startLoop) {
+              imgCount++;
+              await new Promise(resolve => setTimeout(resolve, 5000));
+            } else {
+              await new Promise(resolve => setTimeout(resolve, 150));
+            }
 
             counter += 1024;
             index+=1;
           }
-          startLoop = true;
         }
 
         await sendChunk();
-        imgCount++;
       }
     }
-  }, 100); // every 100 ms check
+  }, 1000); // every 100 ms check
 }
 
 loop()
