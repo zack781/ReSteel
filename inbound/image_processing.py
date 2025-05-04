@@ -1,10 +1,12 @@
-from config import *
-import argparse
-import numpy as np
+import os
 import cv2
+import numpy as np
+import sqlite3
 import ezdxf
-
-
+from shapely.geometry import Polygon
+from rectpack import newPacker
+import matplotlib.pyplot as plt
+from inbound.config import MIN_RECT_SIZE_MM, REAL_P1P2_DISTANCE_MM,MIN_USABLE_AREA_MM ,red_hsv,green_hsv_range
 def process_image_to_dxf(image_path, dxf_output_path, p1_hsv_range=None, p2_hsv_range=None):
     """ Process image -> Contour detection -> DXF generation (retain external and internal contours, remove noise & P1P2 markers) """
 
@@ -45,11 +47,11 @@ def process_image_to_dxf(image_path, dxf_output_path, p1_hsv_range=None, p2_hsv_
     _, thresh = cv2.threshold(gray, 160, 255, cv2.THRESH_BINARY)
 
     # Display binarized image (for inspection)
-    # plt.figure(figsize=(5,5))
-    # plt.imshow(thresh, cmap='gray')
-    # plt.title("Thresholded Image (Wood Shape)")
-    # plt.axis("off")
-    # plt.show()
+    plt.figure(figsize=(5,5))
+    plt.imshow(thresh, cmap='gray')
+    plt.title("Thresholded Image (Wood Shape)")
+    plt.axis("off")
+    plt.show()
 
     # Contour detection (detect all levels, including external and internal contours)
     contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -168,13 +170,18 @@ def load_scaled_dxf_and_find_max_rectangles(dxf_input_path, dxf_output_path, sca
         height = y2 - y1 + 1
 
         area_mm = area / (scale ** 2)
-        width_mm = width / scale
-        height_mm = height / scale
+        # width_mm = width / scale
+        # height_mm = height / scale
+        padding_px = 2
+        width_mm = (width - 2 * padding_px) / scale
+        height_mm = (height - 2 * padding_px) / scale
         if area_mm < MIN_USABLE_AREA_MM or width_mm < MIN_RECT_SIZE_MM or height_mm < MIN_RECT_SIZE_MM:
             break
 
-        x_real = x1 / scale + x_min
-        y_real = y1 / scale + y_min
+        # x_real = (x1) / scale + x_min
+        # y_real = (y1) / scale + y_min
+        x_real = (x1 + padding_px) / scale+x_min
+        y_real = (y1 + padding_px) / scale+y_min
 
         rectangles.append((x_real, y_real, width_mm, height_mm))
         binary_mask[y1:y2+1, x1:x2+1] = 0
@@ -206,8 +213,8 @@ def compute_scale(P1_pixel, P2_pixel, dxf_input_path, dxf_output_path):
     theta = np.arctan2(P2_pixel[1] - P1_pixel[1], P2_pixel[0] - P1_pixel[0])
 
     # Compute the rotation matrix (counterclockwise rotation by -theta)
-    cos_theta = np.cos(-theta)
-    sin_theta = np.sin(-theta)
+    cos_theta = np.cos(theta)
+    sin_theta = np.sin(theta)
 
     # Read DXF
     doc = ezdxf.readfile(dxf_input_path)
@@ -219,7 +226,7 @@ def compute_scale(P1_pixel, P2_pixel, dxf_input_path, dxf_output_path):
         for p in entity.get_points():
             # Translate to make P1 the new (0,0)
             x, y = p[0] - P1_pixel[0], p[1] - P1_pixel[1]
-
+            y = -y
             # Rotate to make P2 become (10,0)
             x_new = cos_theta * x - sin_theta * y
             y_new = sin_theta * x + cos_theta * y
@@ -295,6 +302,7 @@ def detect_p1_p2(image_path, p1_hsv_range=None, p2_hsv_range=None):
 
     # Read the image and convert it to the HSV color space
     image = cv2.imread(image_path)
+    image_c=cv2.imread(image_path)
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
     # Set the HSV color range for P1 (red)
@@ -308,10 +316,18 @@ def detect_p1_p2(image_path, p1_hsv_range=None, p2_hsv_range=None):
     P1 = None
     for cnt in contours_red:
         (x, y), radius = cv2.minEnclosingCircle(cnt)
-        print(radius)
-        if 30 < radius < 200:
-            P1 = (int(x), int(y))
-
+        if 100< radius < 200: #50 160
+            print("radius:", radius)
+            area = cv2.contourArea(cnt)
+            circle_area = np.pi * (radius ** 2)
+            fill_ratio = area / circle_area
+            print("ratio:", fill_ratio)
+            if 0.5<fill_ratio<0.9:
+                P1 = (int(x), int(y))
+                cv2.circle(image, (int(x), int(y)), int(radius), (255, 0, 0), 2)
+                cv2.putText(image, f"{int(radius)}", (int(x)-30, int(y)-10),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
+    cv2.imwrite("debug_detected_P1.png", image)
     # Set the HSV color range for P2 (green)
     if p2_hsv_range is None:
         p2_hsv_range = [(np.array([30, 40, 40]), np.array([95, 255, 255]))]
@@ -322,9 +338,20 @@ def detect_p1_p2(image_path, p1_hsv_range=None, p2_hsv_range=None):
     P2 = None
     for cnt in contours_green:
         (x, y), radius = cv2.minEnclosingCircle(cnt)
-        if 30 < radius < 200:
-            P2 = (int(x), int(y))
+        if 100 < radius < 200:
+            print("radius:", radius)
+            area = cv2.contourArea(cnt)
+            circle_area = np.pi * (radius ** 2)
+            fill_ratio = area / circle_area
+            print("ratio:", fill_ratio)
+            if 0.5<fill_ratio<0.9:
+                P2 = (int(x), int(y))
 
+            cv2.circle(image_c, (int(x), int(y)), int(radius), (255, 0, 0), 2)
+            cv2.putText(image_c, f"{int(radius)}", (int(x)-30, int(y)-10),
+            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
+
+    cv2.imwrite("debug_detected_P2.png", image_c)
     if P1 is None or P2 is None:
         raise ValueError("Detection failed: Unable to correctly detect P1 (red O) or P2 (green O)")
 
@@ -345,11 +372,10 @@ def processing(image_path, dxf_intermediate_path, dxf_intermediate_scaled, dxf_o
     Returns:
     tuple: (Final DXF file path, calculated maximum usable rectangle rec((x_real, y_real, width_mm, height_mm)))
     """
-    print("processing..")
     if p1 is None:
         p1 = [(np.array([0, 80, 80]), np.array([10, 255, 255])), (np.array([160, 80, 80]), np.array([179, 255, 255]))]
     if p2 is None:
-        p2 = [(np.array([30, 40, 40]), np.array([95, 255, 255]))]
+        p2 = [(np.array([30, 40, 40]), np.array([85, 255, 255]))]
 
     # 1. Identify contours and remove P1P2 markers
     process_image_to_dxf(image_path, dxf_intermediate_path,p1,p2)
