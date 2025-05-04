@@ -1,3 +1,10 @@
+from config import *
+import argparse
+import numpy as np
+import cv2
+import ezdxf
+
+
 def process_image_to_dxf(image_path, dxf_output_path, p1_hsv_range=None, p2_hsv_range=None):
     """ Process image -> Contour detection -> DXF generation (retain external and internal contours, remove noise & P1P2 markers) """
 
@@ -38,11 +45,11 @@ def process_image_to_dxf(image_path, dxf_output_path, p1_hsv_range=None, p2_hsv_
     _, thresh = cv2.threshold(gray, 160, 255, cv2.THRESH_BINARY)
 
     # Display binarized image (for inspection)
-    plt.figure(figsize=(5,5))
-    plt.imshow(thresh, cmap='gray')
-    plt.title("Thresholded Image (Wood Shape)")
-    plt.axis("off")
-    plt.show()
+    # plt.figure(figsize=(5,5))
+    # plt.imshow(thresh, cmap='gray')
+    # plt.title("Thresholded Image (Wood Shape)")
+    # plt.axis("off")
+    # plt.show()
 
     # Contour detection (detect all levels, including external and internal contours)
     contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -183,6 +190,7 @@ def load_scaled_dxf_and_find_max_rectangles(dxf_input_path, dxf_output_path, sca
     doc.saveas(dxf_output_path)
     print(f"DXF processing completed, saved to: {dxf_output_path}")
     print(f"Found {len(rectangles)} rectangles")
+    print("COMPLETED")
     return rectangles
 
 
@@ -338,6 +346,7 @@ def processing(image_path, dxf_intermediate_path, dxf_intermediate_scaled, dxf_o
     Returns:
     tuple: (Final DXF file path, calculated maximum usable rectangle rec((x_real, y_real, width_mm, height_mm)))
     """
+    print("processing..")
     if p1 is None:
         p1 = [(np.array([0, 80, 80]), np.array([10, 255, 255])), (np.array([160, 80, 80]), np.array([179, 255, 255]))]
     if p2 is None:
@@ -363,3 +372,19 @@ def processing(image_path, dxf_intermediate_path, dxf_intermediate_scaled, dxf_o
     else:
         print("Failed to detect P1 or P2. Please check the image quality.")
         return None, None
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Run DXF processing pipeline")
+    parser.add_argument("image_path", help="Path to input JPG image")
+    parser.add_argument("dxf_intermediate_path", help="Path to save intermediate DXF")
+    parser.add_argument("dxf_intermediate_scaled", help="Path to save scaled DXF")
+    parser.add_argument("dxf_output_path", help="Path to save final DXF with max rectangle")
+
+    args = parser.parse_args()
+
+    processing(
+        image_path=args.image_path,
+        dxf_intermediate_path=args.dxf_intermediate_path,
+        dxf_intermediate_scaled=args.dxf_intermediate_scaled,
+        dxf_output_path=args.dxf_output_path
+    )

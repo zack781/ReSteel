@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "corelink-client": "^5.1.4"
+    "corelink-client": "^5.1.4",
+    "dotenv": "^16.5.0"
   }
 }

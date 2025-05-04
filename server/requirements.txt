@@ -1,0 +1,10 @@
+opencv-python
+imutils
+# picamera2
+numpy
+ezdxf
+shapely
+matplotlib
+argparse
+rectpack
+

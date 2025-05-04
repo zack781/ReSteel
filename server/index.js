@@ -2,6 +2,8 @@ const corelink = require('./corelink.lib.js');
 const fs = require('fs');
 const { spawn } = require('child_process');
 require('dotenv').config();
+const https = require('https');
+
 
 const config = {
   ControlPort: 20012,
@@ -36,6 +38,10 @@ process.on('SIGTSTP', () => {
   process.exit(0);
 });
 
+const inboundScript = '../inbound/image_processing.py';
+spawn('bash', ['-c', 'source ./venv/bin/activate']);
+spawn('pip3', ['install', '-r', 'requirements.txt']);
+
 const run = async () => {
   corelink.setDebug(true);
   if (await corelink.connect({ username, password }, config).catch((err) => { console.log(err) })) {
@@ -54,14 +60,6 @@ const run = async () => {
     })
 
     corelink.on('data', (streamID, data, header) => {
-      // console.log(streamID, data.toString(), JSON.stringify(header))
-      // console.log('header = ', header);
-      // console.log('header[seq-num] = ', header['seq-num']);
-      // console.log('data = ', data);
-      // if (header['seq-num'] === index) {
-      //   arr(data);
-      //   index+=2048;
-      // }
       console.log('seq-num, index = ', header['seq-num'], ' - ', index);
       arr[header['index']] = data;
       index+=1024;
@@ -112,7 +110,40 @@ const run = async () => {
               console.log("Image saved as output_from_buffer.jpg");
               // const inboundScript = '../inbound/image_processing.py';
               // const inboundProcess = spawn('python', [inboundScript, 'output_from_buffer.jpg']);
+              const filename = header['filename'].replace('.jpg', '');
+              inboundProcess = spawn('python3', [inboundScript, header['filename'], filename + '_intermediate.dxf', filename + '_intermediate_scaled.dxf', filename + '_final_output.dxf']);
 
+              inboundProcess.stdout.on('data', (data) => {
+                console.log(`stdout: ${data}`);
+                if (data.toString().includes('COMPLETED')) {
+                  console.log('inbound script completed');
+
+                  const data = JSON.stringify({
+                    {
+                      "png_path": header['filename'],
+                      "dxf_raw_path": filename + '_intermediate.dxf',
+                      "dxf_processed_path": filename + '_intermediate_scaled.dxf',
+                      "length": 300,
+                      "width": 150,
+                      "measurements": [
+                        { "rectangles": [[120,0,0,0]], "length": 120, "width": 80 },
+                        { "rectangles": [[180,5,5,5]], "length": 180, "width": 90 }
+                      ]
+                    }
+                  });
+
+                  const options = {
+                    hostname: 'api.example.com',
+                    path: '/submit',
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Content-Length': data.length
+                    }
+                  };
+                  
+                }
+              });
             }
           });
         }
